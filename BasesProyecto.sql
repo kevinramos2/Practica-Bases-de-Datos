@@ -484,3 +484,132 @@ INNER JOIN Categorias cat ON p.Id_categoria = cat.Id_categoria
 WHERE p.Id_producto = 'PROD_007';
 
 -- #################################################################################################################################################################################
+
+
+-- Tablas en 3FN de Recibo de abastecimiento
+
+-- Eliminar por si acaso
+DROP TABLE IF EXISTS Recibo_proveedor;
+DROP TABLE IF EXISTS Recibo_de_abastecimiento;
+DROP TABLE IF EXISTS Precios_unidad;
+DROP TABLE IF EXISTS Identificacion_proveedor;
+
+
+create table Recibo_proveedor(
+	Id_recibo varchar(50),
+	Proveedor int,
+	Cantidad_encargada int,
+	Fecha_envio date,
+	Fecha_recepcion date,
+	foreign key (Id_recibo) references Recibo_de_abastecimiento(Id_recibo) on delete cascade on update cascade,
+	foreign key (Proveedor) references Identificacion_proveedor(Proveedor) on delete cascade on update cascade
+);
+
+create table Recibo_de_abastecimiento(
+	Id_recibo varchar(50) primary key,
+	Precio_total float,
+);
+
+create table Precios_unidad(
+	Id_proveedor int,
+	Precio_unidad float
+	foreign key (Id_proveedor) references Identificacion_proveedor(Proveedor) on delete cascade on update cascade
+);
+
+create table Identificacion_proveedor(
+	Proveedor int primary key,
+	Id_proveedor varchar(50)
+);
+
+-- Settear datos
+
+insert into Identificacion_proveedor(Proveedor,Id_proveedor)
+values
+	(1,'PR001'),
+	(2,'PR002'),
+	(3,'PR003'),
+	(4,'PR004'),
+	(5,'PR005')
+	;
+SELECT * FROM Identificacion_proveedor;
+
+insert into Precios_unidad(Id_proveedor,Precio_unidad)
+values
+	(1,20000),
+	(1,20000),
+	(2,70000),
+	(3,60000),
+	(3,60000),
+	(4,15000),
+	(5,8000),
+	(5,8000),
+	(5,8000)
+	;
+select * from Precios_unidad;
+
+insert into Recibo_de_abastecimiento(Id_recibo,Precio_total)
+values
+	('0624PR1',400000),
+	('0625PR1',400000),
+	('0524PR2',105000),
+	('0824PR3',1800000),
+	('0825PR3',1800000),
+	('0924PR4',150000),
+	('0624PR5',400000),
+	('0625PR5',400000),
+	('0626PR5',400000)
+	;
+select * from Recibo_de_abastecimiento;
+
+insert into Recibo_proveedor(Id_recibo,Proveedor,Cantidad_encargada,Fecha_envio,Fecha_recepcion)
+values
+	('0624PR1',1,20,'2024-06-21','2024-06-26'),
+	('0625PR1',1,20,'2024-06-23','2024-06-28'),
+	('0524PR2',2,15,'2024-05-10','2024-05-16'),
+	('0824PR3',3,30,'2024-08-09','2024-08-20'),
+	('0825PR3',3,30,'2024-09-09','2024-09-28'),
+	('0924PR4',4,10,'2024-09-17','2024-09-20'),
+	('0624PR5',5,50,'2024-06-21','2024-06-26'),
+	('0625PR5',5,50,'2024-06-30','2024-07-04'),
+	('0626PR5',5,50,'2024-07-15','2024-07-25')
+	;
+select * from Recibo_proveedor;
+
+-- Pruebas de integridad referencial
+
+-- proveedores y sus recibos
+SELECT rp.Id_recibo, rp.Proveedor, ip.Id_proveedor 
+FROM Recibo_proveedor rp
+JOIN Identificacion_proveedor ip ON rp.Proveedor = ip.Proveedor;
+
+-- Precios unitarios de cada proveedor
+SELECT pu.Id_proveedor, ip.Id_proveedor, pu.Precio_unidad
+FROM Precios_unidad pu
+JOIN Identificacion_proveedor ip ON pu.Id_proveedor = ip.Proveedor;
+
+-- Recibos y precios totales
+SELECT ra.Id_recibo, ra.Precio_total, rp.Cantidad_encargada
+FROM Recibo_de_abastecimiento ra
+JOIN Recibo_proveedor rp ON ra.Id_recibo = rp.Id_recibo;
+
+-- Proveedores con múltiples recibos
+SELECT ip.Id_proveedor, COUNT(rp.Id_recibo) AS Recibos_totales
+FROM Identificacion_proveedor ip
+JOIN Recibo_proveedor rp ON ip.Proveedor = rp.Proveedor
+GROUP BY ip.Id_proveedor;
+
+-- Total de productos encargados por proveedor
+SELECT ip.Id_proveedor, SUM(rp.Cantidad_encargada) AS Total_encargado
+FROM Identificacion_proveedor ip
+JOIN Recibo_proveedor rp ON ip.Proveedor = rp.Proveedor
+GROUP BY ip.Id_proveedor;
+
+-- Recibos enviados y recibidos en un rango de fechas
+SELECT *
+FROM Recibo_proveedor
+WHERE Fecha_envio BETWEEN '2024-06-01' AND '2024-07-01';
+
+--Recibos con un precio total mayor a un valor específico
+SELECT ra.Id_recibo, ra.Precio_total
+FROM Recibo_de_abastecimiento ra
+WHERE ra.Precio_total > 300000;
